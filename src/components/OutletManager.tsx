@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Outlet, Product, StockEntry } from '../types';
 import { 
   FileSpreadsheet, 
@@ -9,20 +9,27 @@ import {
   ArrowDownCircle, 
   ChevronDown,
   Sparkles,
-  X 
+  X,
+  Search,
+  Check,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { ExcelUploader } from './ExcelUploader';
 import { SmartInputField } from './SmartInputField';
+import { ConflictResolver } from './ConflictResolver';
 import { cn } from '../lib/utils';
+import Fuse from 'fuse.js';
+import { HistoryRecord } from '../types';
 
 interface OutletManagerProps {
   outlet: Outlet;
   products: Product[];
-  onUpdateStock: (stock: Record<string, StockEntry>) => void;
+  onUpdateStock: (stock: Record<string, StockEntry>, date?: string) => void;
   allOutlets: Outlet[];
   onSelectOutlet: (id: string) => void;
   onNavigateToMenu?: () => void;
   onBack: () => void;
+  history: HistoryRecord[];
 }
 
 export function OutletManager({ 
@@ -32,74 +39,110 @@ export function OutletManager({
   allOutlets, 
   onSelectOutlet,
   onNavigateToMenu,
-  onBack
+  onBack,
+  history
 }: OutletManagerProps) {
   const [showUploader, setShowUploader] = useState(false);
   const [showBulkAI, setShowBulkAI] = useState(false);
   const [selectedAIColumn, setSelectedAIColumn] = useState<keyof StockEntry>('received');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
+  const [conflictItems, setConflictItems] = useState<{ name: string; qty: number }[]>([]);
+  const [pendingField, setPendingField] = useState<keyof StockEntry>('sold');
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
+
+  const activeStock = useMemo(() => {
+    const historical = history.find(h => h.date === selectedDate && h.outletId === outlet.id);
+    return historical ? historical.stock : outlet.stock;
+  }, [selectedDate, history, outlet.id, outlet.stock]);
+
+  const fuse = useMemo(() => new Fuse(products, {
+    keys: ['name'],
+    threshold: 0.3
+  }), [products]);
 
   const categories = ['All', ...Array.from(new Set(products.map(p => p.category)))];
 
   const filteredProducts = products.filter(p => {
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+    const pName = p.name.toLowerCase();
+    const sTerm = searchTerm.toLowerCase();
+    const matchesSearch = pName.includes(sTerm);
     const matchesCategory = selectedCategory === 'All' || p.category === selectedCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const handleSmartEntry = (field: keyof StockEntry, data: Record<string, number>) => {
-    const updatedStock = { ...outlet.stock };
+  const handleSmartEntry = (field: keyof StockEntry, data: Record<string, number>, unmatched: {name: string, qty: number}[] = []) => {
+    const updatedStock = { ...activeStock };
     Object.entries(data).forEach(([pId, qty]) => {
       if (updatedStock[pId]) {
         updatedStock[pId] = {
           ...updatedStock[pId],
-          [field]: qty,
+          [field]: (updatedStock[pId][field] || 0) + qty,
           lastUpdated: new Date().toISOString()
         };
-        // Recalculate closing for this item
         const s = updatedStock[pId];
         s.closingStock = s.openingStock + s.received - s.sold - s.returned;
       }
     });
-    onUpdateStock(updatedStock);
+
+    onUpdateStock(updatedStock, selectedDate);
+
+    if (unmatched.length > 0) {
+      setPendingField(field);
+      setConflictItems(unmatched);
+    }
+  };
+
+  const handleConflictResolve = (resolutions: Record<string, number>) => {
+    const updatedStock = { ...activeStock };
+    Object.entries(resolutions).forEach(([pId, qty]) => {
+      if (updatedStock[pId]) {
+        updatedStock[pId] = {
+          ...updatedStock[pId],
+          [pendingField]: (updatedStock[pId][pendingField] || 0) + qty,
+          lastUpdated: new Date().toISOString()
+        };
+        const s = updatedStock[pId];
+        s.closingStock = s.openingStock + s.received - s.sold - s.returned;
+      }
+    });
+    onUpdateStock(updatedStock, selectedDate);
+    setConflictItems([]);
   };
 
   const handleExcelData = (data: Array<{ name: string; sold: number }>) => {
-    const updatedStock = { ...outlet.stock };
-    let matchedCount = 0;
-    let unmatchedItems: string[] = [];
+    const updatedStock = { ...activeStock };
+    let unmatched: { name: string; qty: number }[] = [];
     
     data.forEach(item => {
-      // Improved fuzzy search
-      const product = products.find(p => {
-        const pName = p.name.toLowerCase();
-        const iName = item.name.toLowerCase();
-        return pName === iName || pName.includes(iName) || iName.includes(pName);
-      });
+      const results = fuse.search(item.name);
+      const product = results.length > 0 ? results[0].item : null;
 
       if (product && updatedStock[product.id]) {
         updatedStock[product.id] = {
           ...updatedStock[product.id],
-          sold: item.sold,
-          closingStock: updatedStock[product.id].openingStock + updatedStock[product.id].received - item.sold - updatedStock[product.id].returned,
+          sold: (updatedStock[product.id].sold || 0) + item.sold,
+          closingStock: updatedStock[product.id].openingStock + updatedStock[product.id].received - (updatedStock[product.id].sold + item.sold) - updatedStock[product.id].returned,
           lastUpdated: new Date().toISOString()
         };
-        matchedCount++;
       } else {
-        unmatchedItems.push(item.name);
+        unmatched.push({ name: item.name, qty: item.sold });
       }
     });
 
-    onUpdateStock(updatedStock);
+    onUpdateStock(updatedStock, selectedDate);
     setShowUploader(false);
-    
-    const message = `Broomies AI: Matched ${matchedCount} items from file.${unmatchedItems.length > 0 ? `\n\n⚠️ ${unmatchedItems.length} items missing in Menu: ${unmatchedItems.slice(0, 5).join(', ')}${unmatchedItems.length > 5 ? '...' : ''}` : ''}`;
-    alert(message);
+
+    if (unmatched.length > 0) {
+      setPendingField('sold');
+      setConflictItems(unmatched);
+    } else {
+      alert("Excel Imported Successfully!");
+    }
   };
 
   const updateField = (productId: string, field: keyof StockEntry, value: number) => {
-    const entry = outlet.stock[productId];
+    const entry = activeStock[productId];
     const newEntry = { ...entry, [field]: value };
     
     // Recalculate closing
@@ -107,13 +150,13 @@ export function OutletManager({
     newEntry.lastUpdated = new Date().toISOString();
 
     onUpdateStock({
-      ...outlet.stock,
+      ...activeStock,
       [productId]: newEntry
-    });
+    }, selectedDate);
   };
 
   const startNextDay = () => {
-    const nextDayStock = { ...outlet.stock };
+    const nextDayStock = { ...activeStock };
     Object.keys(nextDayStock).forEach(pId => {
       const current = nextDayStock[pId];
       nextDayStock[pId] = {
@@ -176,6 +219,22 @@ export function OutletManager({
           </div>
         </div>
 
+        <div className="bg-bakery-accent/10 p-6 rounded-[2rem] border border-bakery-accent/20 flex flex-col items-center">
+          <p className="text-[10px] font-black text-bakery-brown/40 uppercase tracking-widest mb-2">Editing For Date</p>
+          <div className="flex items-center space-x-3 bg-white px-5 py-2.5 rounded-2xl shadow-sm border border-bakery-orange/10 transition-all hover:border-bakery-orange/30">
+            <CalendarIcon className="w-5 h-5 text-bakery-orange" />
+            <input 
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="bg-transparent font-black text-bakery-brown outline-none border-none focus:ring-0 text-lg cursor-pointer"
+            />
+          </div>
+          {selectedDate !== new Date().toISOString().split('T')[0] && (
+            <p className="text-[10px] font-bold text-bakery-orange mt-2 uppercase animate-pulse">⚠️ Editing Historical Data</p>
+          )}
+        </div>
+
         <div className="flex flex-wrap gap-3">
           <button 
             onClick={() => setShowBulkAI(true)}
@@ -232,8 +291,8 @@ export function OutletManager({
                 <SmartInputField 
                   products={products}
                   columnName={selectedAIColumn.replace('Stock', '').toUpperCase()}
-                  onDataParsed={(data) => {
-                    handleSmartEntry(selectedAIColumn, data);
+                  onDataParsed={(data, unmatched) => {
+                    handleSmartEntry(selectedAIColumn, data, unmatched);
                     setShowBulkAI(false);
                   }}
                   onNavigateToMenu={onNavigateToMenu}
@@ -250,20 +309,19 @@ export function OutletManager({
                   <p>... or just write: "dus chocochip cake aur 5 brown bread"</p>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={startNextDay}
-                  className={cn(
-                    "flex-1 py-5 rounded-[2rem] bg-bakery-accent text-bakery-brown font-black text-xl flex items-center justify-center space-x-3 hover:scale-[1.02] shadow-xl shadow-bakery-accent/30 transition-all active:scale-95"
-                  )}
-                >
-                  <RefreshCcw className="w-6 h-6" />
-                  <span>Save & Start Next Day</span>
-                </button>
-              </div>
             </div>
           </div>
         </div>
+      )}
+
+      {conflictItems.length > 0 && (
+        <ConflictResolver 
+          unmatched={conflictItems}
+          products={products}
+          onResolve={handleConflictResolve}
+          onCancel={() => setConflictItems([])}
+          title={`Broomies AI Logic Check - Match Unmatched ${pendingField.replace('Stock', '').toUpperCase()}`}
+        />
       )}
 
       {showUploader && (
@@ -305,136 +363,138 @@ export function OutletManager({
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] overflow-hidden shadow-sm border border-bakery-orange/5">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-bakery-warm/50 border-b border-bakery-orange/10">
-              <th className="text-left p-6 font-serif italic text-bakery-brown text-lg">Item Name</th>
-              <th className="text-center p-6 font-bold text-bakery-brown/70 min-w-[150px] uppercase tracking-tighter text-sm">
-                <div className="flex flex-col items-center space-y-2">
-                  <span>Opening Item</span>
-                  <SmartInputField 
-                    products={products} 
-                    columnName="Opening" 
-                    onDataParsed={(data) => handleSmartEntry('openingStock', data)} 
-                    onNavigateToMenu={onNavigateToMenu}
-                  />
-                </div>
-              </th>
-              <th className="text-center p-6 font-bold text-bakery-brown/70 min-w-[150px] uppercase tracking-tighter text-sm">
-                <div className="flex flex-col items-center space-y-2">
-                  <span>Received Item</span>
-                  <SmartInputField 
-                    products={products} 
-                    columnName="Received" 
-                    onDataParsed={(data) => handleSmartEntry('received', data)} 
-                    onNavigateToMenu={onNavigateToMenu}
-                  />
-                </div>
-              </th>
-              <th className="text-center p-6 font-bold text-bakery-brown/70 min-w-[150px] uppercase tracking-tighter text-sm">
-                <div className="flex flex-col items-center space-y-2">
-                  <div className="flex items-center space-x-2">
-                    <span>Sales</span>
-                    <button 
-                      onClick={() => setShowUploader(true)}
-                      className="p-1 hover:bg-bakery-orange/10 rounded-lg text-bakery-orange transition-colors"
-                      title="Upload Excel for Sales"
-                    >
-                      <FileSpreadsheet className="w-4 h-4" />
-                    </button>
+      <div className="bg-white rounded-[2rem] shadow-sm border border-bakery-orange/5 overflow-hidden">
+        <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-bakery-orange/20">
+          <table className="w-full border-collapse min-w-[1000px]">
+            <thead>
+              <tr className="bg-bakery-warm/50 border-b border-bakery-orange/10">
+                <th className="text-left p-4 md:p-6 font-serif italic text-bakery-brown text-lg">Item Name</th>
+                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
+                  <div className="flex flex-col items-center space-y-2">
+                    <span className="whitespace-nowrap">Opening Item</span>
+                    <SmartInputField 
+                      products={products} 
+                      columnName="Opening" 
+                      onDataParsed={(data, unmatched) => handleSmartEntry('openingStock', data, unmatched)} 
+                      onNavigateToMenu={onNavigateToMenu}
+                    />
                   </div>
-                  <SmartInputField 
-                    products={products} 
-                    columnName="Sales" 
-                    onDataParsed={(data) => handleSmartEntry('sold', data)} 
-                    onNavigateToMenu={onNavigateToMenu}
-                  />
-                </div>
-              </th>
-              <th className="text-center p-6 font-bold text-bakery-brown/70 min-w-[150px] uppercase tracking-tighter text-sm">
-                <div className="flex flex-col items-center space-y-2">
-                  <span>Returned</span>
-                  <SmartInputField 
-                    products={products} 
-                    columnName="Returned" 
-                    onDataParsed={(data) => handleSmartEntry('returned', data)} 
-                    onNavigateToMenu={onNavigateToMenu}
-                  />
-                </div>
-              </th>
-              <th className="bg-bakery-accent/20 text-center p-6 font-black text-bakery-brown uppercase tracking-tighter text-sm">Closing Item</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredProducts.map(product => {
-              const stock = outlet.stock[product.id];
-              if (!stock) return null;
-
-              return (
-                <tr key={product.id} className="border-b border-bakery-warm/30 hover:bg-bakery-cream/50 transition-colors">
-                  <td className="p-6">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-8 h-8 rounded-lg bg-bakery-warm flex items-center justify-center">
-                        <PackagePlus className="w-4 h-4 text-bakery-orange" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-bakery-brown">{product.name}</p>
-                        <p className="text-xs text-bakery-brown/40">{product.category}</p>
-                      </div>
+                </th>
+                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
+                  <div className="flex flex-col items-center space-y-2">
+                    <span className="whitespace-nowrap">Received Item</span>
+                    <SmartInputField 
+                      products={products} 
+                      columnName="Received" 
+                      onDataParsed={(data, unmatched) => handleSmartEntry('received', data, unmatched)} 
+                      onNavigateToMenu={onNavigateToMenu}
+                    />
+                  </div>
+                </th>
+                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
+                  <div className="flex flex-col items-center space-y-2">
+                    <div className="flex items-center space-x-2">
+                      <span>Sales</span>
+                      <button 
+                        onClick={() => setShowUploader(true)}
+                        className="p-1 hover:bg-bakery-orange/10 rounded-lg text-bakery-orange transition-colors"
+                        title="Upload Excel for Sales"
+                      >
+                        <FileSpreadsheet className="w-4 h-4" />
+                      </button>
                     </div>
-                  </td>
-                  <td className="p-6 text-center">
-                    <input 
-                      type="number" 
-                      value={stock.openingStock}
-                      onChange={(e) => updateField(product.id, 'openingStock', parseInt(e.target.value) || 0)}
-                      className="w-20 mx-auto text-center p-2 rounded-lg bg-bakery-warm/50 border-none focus:ring-2 focus:ring-bakery-accent font-medium text-bakery-brown"
+                    <SmartInputField 
+                      products={products} 
+                      columnName="Sales" 
+                      onDataParsed={(data, unmatched) => handleSmartEntry('sold', data, unmatched)} 
+                      onNavigateToMenu={onNavigateToMenu}
                     />
-                  </td>
-                  <td className="p-6">
-                    <input 
-                      type="number" 
-                      value={stock.received}
-                      onChange={(e) => updateField(product.id, 'received', parseInt(e.target.value) || 0)}
-                      className="w-20 mx-auto text-center p-2 rounded-lg bg-bakery-warm border-none focus:ring-2 focus:ring-bakery-accent"
+                  </div>
+                </th>
+                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
+                  <div className="flex flex-col items-center space-y-2">
+                    <span className="whitespace-nowrap">Returned</span>
+                    <SmartInputField 
+                      products={products} 
+                      columnName="Returned" 
+                      onDataParsed={(data, unmatched) => handleSmartEntry('returned', data, unmatched)} 
+                      onNavigateToMenu={onNavigateToMenu}
                     />
-                  </td>
-                  <td className="p-6 text-center">
-                    <input 
-                      type="number" 
-                      value={stock.sold}
-                      onChange={(e) => updateField(product.id, 'sold', parseInt(e.target.value) || 0)}
-                      className={cn(
-                        "w-20 mx-auto text-center p-2 rounded-lg bg-green-50 border-none focus:ring-2 focus:ring-green-400 font-bold",
-                        stock.sold > 0 ? "text-green-700" : "text-gray-400"
-                      )}
-                    />
-                  </td>
-                  <td className="p-6">
-                    <input 
-                      type="number" 
-                      value={stock.returned}
-                      onChange={(e) => updateField(product.id, 'returned', parseInt(e.target.value) || 0)}
-                      className="w-20 mx-auto text-center p-2 rounded-lg bg-white border border-bakery-orange/20 focus:ring-2 focus:ring-bakery-orange"
-                    />
-                  </td>
-                  <td className="p-6 text-center">
-                    <input 
-                      type="number" 
-                      value={stock.closingStock}
-                      onChange={(e) => updateField(product.id, 'closingStock', parseInt(e.target.value) || 0)}
-                      className={cn(
-                        "w-24 mx-auto text-center p-3 rounded-2xl bg-bakery-accent/20 border-2 border-bakery-accent/30 focus:ring-4 focus:ring-bakery-accent font-black text-xl text-bakery-brown transition-all",
-                        stock.closingStock !== (stock.openingStock + stock.received - stock.sold - stock.returned) && "border-red-400 bg-red-50"
-                      )}
-                    />
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+                  </div>
+                </th>
+                <th className="bg-bakery-accent/20 text-center p-4 md:p-6 font-black text-bakery-brown uppercase tracking-tighter text-xs">Closing Item</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredProducts.map(product => {
+                const stock = activeStock[product.id];
+                if (!stock) return null;
+  
+                return (
+                  <tr key={product.id} className="border-b border-bakery-warm/30 hover:bg-bakery-cream/50 transition-colors">
+                    <td className="p-4 md:p-6">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-8 h-8 rounded-lg bg-bakery-warm flex items-center justify-center shrink-0">
+                          <PackagePlus className="w-4 h-4 text-bakery-orange" />
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-bold text-bakery-brown truncate">{product.name}</p>
+                          <p className="text-[10px] text-bakery-brown/40 uppercase font-black">{product.category}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="number" 
+                        value={stock.openingStock}
+                        onChange={(e) => updateField(product.id, 'openingStock', parseInt(e.target.value) || 0)}
+                        className="w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-bakery-warm/50 border-none focus:ring-2 focus:ring-bakery-accent font-medium text-bakery-brown"
+                      />
+                    </td>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="number" 
+                        value={stock.received}
+                        onChange={(e) => updateField(product.id, 'received', parseInt(e.target.value) || 0)}
+                        className="w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-bakery-warm border-none focus:ring-2 focus:ring-bakery-accent"
+                      />
+                    </td>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="number" 
+                        value={stock.sold}
+                        onChange={(e) => updateField(product.id, 'sold', parseInt(e.target.value) || 0)}
+                        className={cn(
+                          "w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-green-50 border-none focus:ring-2 focus:ring-green-400 font-bold",
+                          stock.sold > 0 ? "text-green-700" : "text-gray-400"
+                        )}
+                      />
+                    </td>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="number" 
+                        value={stock.returned}
+                        onChange={(e) => updateField(product.id, 'returned', parseInt(e.target.value) || 0)}
+                        className="w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-white border border-bakery-orange/20 focus:ring-2 focus:ring-bakery-orange"
+                      />
+                    </td>
+                    <td className="p-4 text-center">
+                      <input 
+                        type="number" 
+                        value={stock.closingStock}
+                        onChange={(e) => updateField(product.id, 'closingStock', parseInt(e.target.value) || 0)}
+                        className={cn(
+                          "w-20 md:w-24 mx-auto text-center p-2 md:p-3 rounded-2xl bg-bakery-accent/20 border-2 border-bakery-accent/30 focus:ring-4 focus:ring-bakery-accent font-black text-lg md:text-xl text-bakery-brown transition-all",
+                          stock.closingStock !== (stock.openingStock + stock.received - stock.sold - stock.returned) && "border-red-400 bg-red-50"
+                        )}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
         
         {products.length === 0 && (
           <div className="p-20 text-center">
@@ -444,16 +504,23 @@ export function OutletManager({
       </div>
 
       <div className="flex justify-center pt-8 pb-12">
-        <button
-          onClick={startNextDay}
-          className="group flex flex-col items-center space-y-4"
-        >
-          <div className="bg-bakery-brown text-white px-24 py-6 rounded-[2.5rem] font-black text-3xl shadow-2xl shadow-bakery-brown/30 hover:scale-105 active:scale-95 transition-all flex items-center space-x-4">
-            <RefreshCcw className="w-8 h-8 group-hover:rotate-180 transition-transform duration-500" />
-            <span>SAVE & START NEXT DAY</span>
+        {selectedDate === new Date().toISOString().split('T')[0] ? (
+          <button
+            onClick={startNextDay}
+            className="group flex flex-col items-center space-y-4"
+          >
+            <div className="bg-bakery-brown text-white px-24 py-6 rounded-[2.5rem] font-black text-3xl shadow-2xl shadow-bakery-brown/30 hover:scale-105 active:scale-95 transition-all flex items-center space-x-4">
+              <RefreshCcw className="w-8 h-8 group-hover:rotate-180 transition-transform duration-500" />
+              <span>SAVE & START NEXT DAY</span>
+            </div>
+            <p className="text-bakery-brown/60 font-medium italic">Clicking this will move all Closing items to Tomorrow's Opening stock.</p>
+          </button>
+        ) : (
+          <div className="bg-bakery-orange text-white px-24 py-6 rounded-[2.5rem] font-black text-3xl shadow-2xl shadow-bakery-orange/30 flex items-center space-x-4">
+            <CheckCircle2 className="w-8 h-8" />
+            <span>HISTORY AUTO-SAVED</span>
           </div>
-          <p className="text-bakery-brown/60 font-medium italic">Clicking this will move all Closing items to Tomorrow's Opening stock.</p>
-        </button>
+        )}
       </div>
 
     </div>

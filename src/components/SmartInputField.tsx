@@ -7,7 +7,7 @@ import { Product } from '../types';
 interface SmartInputFieldProps {
   products: Product[];
   columnName: string;
-  onDataParsed: (data: Record<string, number>) => void;
+  onDataParsed: (data: Record<string, number>, unmatched?: {name: string, qty: number}[]) => void;
   placeholder?: string;
   onNavigateToMenu?: () => void;
   isBulk?: boolean;
@@ -25,7 +25,15 @@ export function SmartInputField({ products, columnName, onDataParsed, placeholde
     setIsLoading(true);
     try {
       const result = await parseStockInput(inputValue, products, columnName);
-      setPendingResult(result);
+      if (isBulk || result.unmatched.length > 0) {
+        setPendingResult(result);
+      } else {
+        // Quick match, no conflicts
+        onDataParsed(result.matches, []);
+        setInputValue('');
+        setShowSuccess(true);
+        setTimeout(() => setShowSuccess(false), 2000);
+      }
     } catch (error) {
       console.error(error);
     } finally {
@@ -35,7 +43,7 @@ export function SmartInputField({ products, columnName, onDataParsed, placeholde
 
   const confirmData = () => {
     if (pendingResult) {
-      onDataParsed(pendingResult.matches);
+      onDataParsed(pendingResult.matches, pendingResult.unmatched);
       setPendingResult(null);
       setInputValue('');
       setShowSuccess(true);

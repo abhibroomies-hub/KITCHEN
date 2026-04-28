@@ -5,12 +5,15 @@
 
 import React, { useState, useEffect } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { ViewType, Product, Outlet, StockEntry } from './types';
+import { ViewType, Product, Outlet, StockEntry, HistoryRecord } from './types';
 import { Dashboard } from './components/Dashboard';
 import { OutletManager } from './components/OutletManager';
 import { InventoryManager } from './components/InventoryManager';
 import { MenuManager } from './components/MenuManager';
+import { HistoryView } from './components/HistoryView';
+import { ProductionPlanner } from './components/ProductionPlanner';
 import { motion, AnimatePresence } from 'motion/react';
+import { Menu } from 'lucide-react';
 
 // Full Menu Integration - Expanded to 181 items as requested
 const DATA_VERSION = 'v3';
@@ -320,7 +323,9 @@ export default function App() {
   const [currentView, setCurrentView] = useState<ViewType>('dashboard');
   const [products, setProducts] = useState<Product[]>([]); // Initialize empty then load
   const [outlets, setOutlets] = useState<Outlet[]>(INITIAL_OUTLETS);
+  const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [selectedOutletId, setSelectedOutletId] = useState<string>('sec31');
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Load and Migrations from LocalStorage
   useEffect(() => {
@@ -426,14 +431,39 @@ export default function App() {
       setOutlets(initialized);
       localStorage.setItem('broomies_outlets', JSON.stringify(initialized));
     }
+
+    // 3. Load History
+    const savedHistory = localStorage.getItem('broomies_history');
+    if (savedHistory) {
+      setHistory(JSON.parse(savedHistory));
+    }
   }, []);
 
-  const updateOutletStock = (outletId: string, updatedStock: Record<string, StockEntry>) => {
-    const newOutlets = outlets.map(o => 
-      o.id === outletId ? { ...o, stock: updatedStock } : o
-    );
-    setOutlets(newOutlets);
-    localStorage.setItem('broomies_outlets', JSON.stringify(newOutlets));
+  const updateOutletStock = (outletId: string, updatedStock: Record<string, StockEntry>, date?: string) => {
+    const today = new Date().toISOString().split('T')[0];
+    const targetDate = date || today;
+
+    if (targetDate === today) {
+      const newOutlets = outlets.map(o => 
+        o.id === outletId ? { ...o, stock: updatedStock } : o
+      );
+      setOutlets(newOutlets);
+      localStorage.setItem('broomies_outlets', JSON.stringify(newOutlets));
+    }
+
+    // Always update history for that date
+    setHistory(prev => {
+      const existingIdx = prev.findIndex(h => h.date === targetDate && h.outletId === outletId);
+      let newHistory;
+      if (existingIdx >= 0) {
+        newHistory = [...prev];
+        newHistory[existingIdx] = { ...newHistory[existingIdx], stock: updatedStock };
+      } else {
+        newHistory = [...prev, { date: targetDate, outletId, stock: updatedStock }];
+      }
+      localStorage.setItem('broomies_history', JSON.stringify(newHistory));
+      return newHistory;
+    });
   };
 
   // Product CRUD
@@ -477,10 +507,31 @@ export default function App() {
   const currentOutlet = outlets.find(o => o.id === selectedOutletId) || outlets[0];
 
   return (
-    <div className="flex bg-bakery-warm min-h-screen">
-      <Sidebar currentView={currentView} onViewChange={setCurrentView} />
+    <div className="flex bg-bakery-warm min-h-screen selection:bg-bakery-accent/30 tracking-tight">
+      <Sidebar 
+        currentView={currentView} 
+        onViewChange={setCurrentView} 
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
       
-      <main className="ml-64 flex-1 p-8">
+      <main className="flex-1 lg:ml-64 p-4 md:p-8 transition-all duration-300">
+        {/* Mobile Toggle Button */}
+        <div className="lg:hidden p-4 mb-4 bg-white rounded-3xl shadow-sm border border-bakery-brown/5 flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+             <button 
+              onClick={() => setIsSidebarOpen(true)}
+              className="p-2 hover:bg-bakery-warm rounded-xl transition-colors text-bakery-brown"
+            >
+              <Menu className="w-6 h-6" />
+            </button>
+            <h1 className="text-xl font-serif font-bold italic text-bakery-brown">Broomies</h1>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-bakery-accent flex items-center justify-center text-[10px] font-black text-bakery-brown">
+            BK
+          </div>
+        </div>
+
         <AnimatePresence mode="wait">
           <motion.div
             key={currentView}
@@ -504,10 +555,35 @@ export default function App() {
               <OutletManager 
                 outlet={currentOutlet} 
                 products={products}
-                onUpdateStock={(stock) => updateOutletStock(currentOutlet.id, stock)}
+                onUpdateStock={(stock, date) => updateOutletStock(currentOutlet.id, stock, date)}
                 allOutlets={outlets}
                 onSelectOutlet={setSelectedOutletId}
                 onNavigateToMenu={() => setCurrentView('inventory')} 
+                onBack={() => setCurrentView('dashboard')}
+                history={history}
+              />
+            )}
+
+            {currentView === 'history' && (
+              <HistoryView 
+                history={history}
+                products={products}
+                outlets={outlets}
+                onBack={() => setCurrentView('dashboard')}
+                onEditRecord={(outletId, date) => {
+                  setSelectedOutletId(outletId);
+                  setCurrentView('outlet-detail');
+                  // We also need to tell OutletManager to set its date, 
+                  // but for now, navigating to it will allow selecting the date.
+                }}
+              />
+            )}
+
+            {currentView === 'production' && (
+              <ProductionPlanner 
+                history={history}
+                products={products}
+                outlets={outlets}
                 onBack={() => setCurrentView('dashboard')}
               />
             )}

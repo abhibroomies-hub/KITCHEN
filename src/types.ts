@@ -26,4 +26,10 @@ export interface Outlet {
   stock: Record<string, StockEntry>; // productId as key
 }
 
-export type ViewType = 'dashboard' | 'outlet-detail' | 'inventory' | 'settings';
+export type ViewType = 'dashboard' | 'outlet-detail' | 'inventory' | 'settings' | 'history' | 'production';
+
+export interface HistoryRecord {
+  date: string; // YYYY-MM-DD
+  outletId: string;
+  stock: Record<string, StockEntry>;
+}
