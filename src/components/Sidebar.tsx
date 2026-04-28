@@ -45,20 +45,20 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
       )}
 
       <div className={cn(
-        "w-64 h-screen bg-bakery-brown text-white flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 border-r border-white/5",
+        "w-56 h-screen bg-bakery-brown text-white flex flex-col fixed left-0 top-0 z-50 transition-transform duration-300 lg:translate-x-0 border-r border-white/5",
         isOpen ? "translate-x-0" : "-translate-x-full"
       )}>
-        <div className="p-8 flex items-center justify-between">
+        <div className="p-6 flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-serif font-bold italic text-bakery-accent">Broomies</h1>
-            <p className="text-[10px] text-bakery-cream/60 mt-1 uppercase tracking-widest font-black">Bakery Automation</p>
+            <h1 className="text-2xl font-serif font-bold italic text-bakery-accent">Broomies</h1>
+            <p className="text-[9px] text-bakery-cream/60 mt-0.5 uppercase tracking-widest font-black">Bakery Automation</p>
           </div>
           <button onClick={onClose} className="lg:hidden p-2 hover:bg-white/10 rounded-xl transition-colors">
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
-        <nav className="flex-1 px-4 py-8 space-y-2">
+        <nav className="flex-1 px-3 py-4 space-y-1">
           {menuItems.map((item) => {
             const Icon = item.icon;
             return (
@@ -66,14 +66,14 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
                 key={item.id}
                 onClick={() => handleNav(item.id as ViewType)}
                 className={cn(
-                  "w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group text-left",
+                  "w-full flex items-center space-x-2.5 px-3 py-2.5 rounded-lg transition-all duration-200 group text-left",
                   currentView === item.id 
-                    ? "bg-bakery-accent text-bakery-brown font-black shadow-lg" 
-                    : "hover:bg-white/10 text-bakery-warm/80 font-medium"
+                    ? "bg-bakery-accent text-bakery-brown font-black shadow-md" 
+                    : "hover:bg-white/10 text-bakery-warm/80 font-medium text-sm"
                 )}
               >
                 <Icon className={cn(
-                  "w-5 h-5",
+                  "w-4 h-4",
                   currentView === item.id ? "text-bakery-brown" : "text-bakery-accent group-hover:scale-110 transition-transform"
                 )} />
                 <span>{item.label}</span>
@@ -82,14 +82,14 @@ export function Sidebar({ currentView, onViewChange, isOpen, onClose }: SidebarP
           })}
         </nav>
 
-        <div className="p-8 bg-black/10">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-bakery-orange flex items-center justify-center font-bold">
+        <div className="p-6 bg-black/10">
+          <div className="flex items-center space-x-2.5">
+            <div className="w-8 h-8 rounded-full bg-bakery-orange flex items-center justify-center font-bold text-xs">
               BK
             </div>
             <div className="min-w-0">
-              <p className="text-sm font-medium truncate">Broomies Kitchen</p>
-              <p className="text-[10px] text-white/50 uppercase font-black">Admin Panel</p>
+              <p className="text-xs font-medium truncate">Broomies Kitchen</p>
+              <p className="text-[8px] text-white/50 uppercase font-black">Admin Panel</p>
             </div>
           </div>
         </div>

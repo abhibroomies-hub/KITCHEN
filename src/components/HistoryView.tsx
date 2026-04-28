@@ -76,7 +76,7 @@ export function HistoryView({ history, products, outlets, onBack, onEditRecord }
         </select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {filteredHistory.map((record, idx) => {
           const totalSales = Object.values(record.stock).reduce((acc, curr) => acc + curr.sold, 0);
           const totalReturns = Object.values(record.stock).reduce((acc, curr) => acc + curr.returned, 0);
@@ -84,36 +84,36 @@ export function HistoryView({ history, products, outlets, onBack, onEditRecord }
           return (
             <div 
               key={`${record.outletId}-${record.date}`}
-              className="bg-white rounded-[2rem] p-8 border border-bakery-orange/5 shadow-sm hover:shadow-xl hover:scale-[1.02] transition-all group"
+              className="bg-white rounded-[1.5rem] p-5 border border-bakery-orange/5 shadow-sm hover:shadow-lg hover:scale-[1.01] transition-all group"
             >
-              <div className="flex justify-between items-start mb-6">
-                <div className="bg-bakery-accent/20 p-3 rounded-2xl group-hover:bg-bakery-accent transition-colors">
-                  <Calendar className="w-6 h-6 text-bakery-brown" />
+              <div className="flex justify-between items-start mb-4">
+                <div className="bg-bakery-accent/20 p-2.5 rounded-xl group-hover:bg-bakery-accent transition-colors">
+                  <Calendar className="w-5 h-5 text-bakery-brown" />
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-black text-bakery-orange uppercase tracking-widest">{record.date}</p>
-                  <p className="text-lg font-bold text-bakery-brown mt-1">{getOutletName(record.outletId)}</p>
+                  <p className="text-[10px] font-black text-bakery-orange uppercase tracking-widest">{record.date}</p>
+                  <p className="text-sm font-bold text-bakery-brown mt-0.5">{getOutletName(record.outletId)}</p>
                 </div>
               </div>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex justify-between items-center p-4 bg-green-50 rounded-2xl border border-green-100">
-                  <span className="text-sm font-bold text-green-700">Total Sales</span>
-                  <span className="text-xl font-black text-green-700">{totalSales}</span>
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between items-center p-3 bg-green-50 rounded-xl border border-green-100">
+                  <span className="text-[10px] font-bold text-green-700 uppercase">Sales</span>
+                  <span className="text-lg font-black text-green-700">{totalSales}</span>
                 </div>
-                <div className="flex justify-between items-center p-4 bg-orange-50 rounded-2xl border border-orange-100">
-                  <span className="text-sm font-bold text-orange-700">Returns</span>
-                  <span className="text-xl font-black text-orange-700">{totalReturns}</span>
+                <div className="flex justify-between items-center p-3 bg-orange-50 rounded-xl border border-orange-100">
+                  <span className="text-[10px] font-bold text-orange-700 uppercase">Return</span>
+                  <span className="text-lg font-black text-orange-700">{totalReturns}</span>
                 </div>
               </div>
 
               <button 
                 onClick={() => onEditRecord(record.outletId, record.date)}
-                className="w-full flex items-center justify-center space-x-2 bg-bakery-brown text-white py-4 rounded-2xl font-black hover:bg-bakery-orange transition-all active:scale-95"
+                className="w-full flex items-center justify-center space-x-2 bg-bakery-brown text-white py-3 rounded-xl font-black text-sm hover:bg-bakery-orange transition-all active:scale-95"
               >
-                <FileSpreadsheet className="w-5 h-5" />
-                <span>View / Edit Details</span>
-                <ChevronRight className="w-5 h-5 ml-1" />
+                <FileSpreadsheet className="w-4 h-4" />
+                <span>View Details</span>
+                <ChevronRight className="w-4 h-4 ml-0.5" />
               </button>
             </div>
           );

@@ -50,24 +50,24 @@ export function MenuManager({ products, onAddProduct, onUpdateProduct, onDeleteP
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0">
-        <div className="flex items-center space-x-4">
-          <div className="bg-white p-3 rounded-2xl shadow-sm border border-bakery-orange/10">
-            <Package className="w-8 h-8 text-bakery-orange" />
+    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0">
+        <div className="flex items-center space-x-3">
+          <div className="bg-white p-2.5 rounded-xl shadow-sm border border-bakery-orange/10">
+            <Package className="w-6 h-6 text-bakery-orange" />
           </div>
           <div>
-            <h1 className="text-4xl font-serif italic text-bakery-brown">Menu Management</h1>
-            <p className="text-bakery-orange font-medium mt-1">Add, edit, or remove bakery items</p>
+            <h1 className="text-2xl font-serif italic text-bakery-brown">Menu Management</h1>
+            <p className="text-bakery-orange text-sm font-medium">Manage product catalog</p>
           </div>
         </div>
-        <div className="flex space-x-3">
+        <div className="flex space-x-2">
           <button 
             onClick={() => { setIsAdding(true); setEditingId(null); setFormData({ name: '', category: 'Cakes', unit: 'Pcs' }); }}
-            className="bg-bakery-orange text-white px-8 py-4 rounded-2xl font-black flex items-center space-x-2 hover:bg-bakery-brown transition-all shadow-xl shadow-bakery-orange/20"
+            className="bg-bakery-orange text-white px-6 py-3 rounded-xl font-black text-sm flex items-center space-x-2 hover:bg-bakery-brown transition-all shadow-lg shadow-bakery-orange/20"
           >
-            <Plus className="w-6 h-6" />
-            <span>Add New Item</span>
+            <Plus className="w-5 h-5" />
+            <span>Add Item</span>
           </button>
         </div>
       </header>

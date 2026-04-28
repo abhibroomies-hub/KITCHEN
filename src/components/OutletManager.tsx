@@ -174,40 +174,40 @@ export function OutletManager({
   };
 
   return (
-    <div className="space-y-8 animate-in fade-in duration-500">
-      <div className="flex items-center space-x-4 mb-2">
+    <div className="space-y-4 animate-in fade-in duration-500">
+      <div className="flex items-center space-x-3 mb-1">
         <button 
           onClick={onBack}
-          className="p-3 hover:bg-bakery-warm rounded-2xl transition-all border border-bakery-orange/10 group"
+          className="p-2 hover:bg-bakery-warm rounded-xl transition-all border border-bakery-orange/10 group"
           title="Back to Dashboard"
         >
-          <ArrowLeft className="w-6 h-6 text-bakery-brown group-hover:-translate-x-1 transition-transform" />
+          <ArrowLeft className="w-5 h-5 text-bakery-brown group-hover:-translate-x-1 transition-transform" />
         </button>
         <div>
-          <h1 className="text-2xl font-serif italic text-bakery-brown">Outlet Management</h1>
-          <p className="text-sm text-bakery-brown/40">Manage stock and daily sales for your bakery</p>
+          <h1 className="text-xl font-serif italic text-bakery-brown">Outlet Management</h1>
+          <p className="text-[10px] text-bakery-brown/40">Manage stock and daily sales</p>
         </div>
       </div>
 
-      <header className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-4 md:space-y-0 bg-white p-6 rounded-[2.5rem] shadow-sm border border-bakery-orange/10 mb-8">
-        <div className="flex items-center space-x-6">
-          <div className="bg-bakery-accent/20 p-3 rounded-2xl">
-            <PackagePlus className="w-8 h-8 text-bakery-brown" />
+      <header className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-3 md:space-y-0 bg-white p-4 rounded-[1.5rem] shadow-sm border border-bakery-orange/10 mb-4">
+        <div className="flex items-center space-x-4">
+          <div className="bg-bakery-accent/20 p-2 rounded-xl">
+            <PackagePlus className="w-6 h-6 text-bakery-brown" />
           </div>
           <div>
-            <p className="text-xs font-bold text-bakery-orange uppercase tracking-widest">Select Managing Outlet</p>
-            <div className="relative group mt-1">
-              <button className="flex items-center space-x-3 bg-bakery-cream/30 hover:bg-bakery-cream/50 px-5 py-2.5 rounded-2xl border border-bakery-orange/10 font-bold text-bakery-brown text-lg transition-all min-w-[220px]">
+            <p className="text-[9px] font-black text-bakery-orange uppercase tracking-widest leading-none">Outlet</p>
+            <div className="relative group">
+              <button className="flex items-center space-x-2 bg-bakery-cream/30 hover:bg-bakery-cream/50 px-3 py-1.5 rounded-xl border border-bakery-orange/10 font-bold text-bakery-brown text-base transition-all min-w-[180px]">
                 <span>{outlet.name}</span>
-                <ChevronDown className="w-5 h-5 text-bakery-orange" />
+                <ChevronDown className="w-4 h-4 text-bakery-orange" />
               </button>
-              <div className="absolute top-full left-0 mt-2 w-full bg-white rounded-2xl shadow-2xl border border-bakery-warm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+              <div className="absolute top-full left-0 mt-1 w-full bg-white rounded-xl shadow-xl border border-bakery-warm opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
                 {allOutlets.map(o => (
                   <button
                     key={o.id}
                     onClick={() => onSelectOutlet(o.id)}
                     className={cn(
-                      "w-full text-left px-5 py-4 hover:bg-bakery-accent/10 transition-colors font-medium border-b border-bakery-warm last:border-none",
+                      "w-full text-left px-4 py-2.5 hover:bg-bakery-accent/10 transition-colors font-medium border-b border-bakery-warm last:border-none text-sm",
                       outlet.id === o.id ? "bg-bakery-accent/20 text-bakery-brown" : "text-bakery-brown/60"
                     )}
                   >
@@ -219,19 +219,19 @@ export function OutletManager({
           </div>
         </div>
 
-        <div className="bg-bakery-accent/10 p-6 rounded-[2rem] border border-bakery-accent/20 flex flex-col items-center">
-          <p className="text-[10px] font-black text-bakery-brown/40 uppercase tracking-widest mb-2">Editing For Date</p>
-          <div className="flex items-center space-x-3 bg-white px-5 py-2.5 rounded-2xl shadow-sm border border-bakery-orange/10 transition-all hover:border-bakery-orange/30">
-            <CalendarIcon className="w-5 h-5 text-bakery-orange" />
+        <div className="bg-bakery-accent/10 p-3 rounded-[1.2rem] border border-bakery-accent/20 flex flex-col items-center">
+          <p className="text-[8px] font-black text-bakery-brown/40 uppercase tracking-widest mb-1">Editing For Date</p>
+          <div className="flex items-center space-x-2 bg-white px-3 py-1.5 rounded-xl shadow-sm border border-bakery-orange/10">
+            <CalendarIcon className="w-4 h-4 text-bakery-orange" />
             <input 
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent font-black text-bakery-brown outline-none border-none focus:ring-0 text-lg cursor-pointer"
+              className="bg-transparent font-bold text-bakery-brown outline-none border-none focus:ring-0 text-sm cursor-pointer"
             />
           </div>
           {selectedDate !== new Date().toISOString().split('T')[0] && (
-            <p className="text-[10px] font-bold text-bakery-orange mt-2 uppercase animate-pulse">⚠️ Editing Historical Data</p>
+            <p className="text-[8px] font-bold text-bakery-orange mt-1 uppercase animate-pulse">⚠️ Historical</p>
           )}
         </div>
 
@@ -363,15 +363,15 @@ export function OutletManager({
         </div>
       </div>
 
-      <div className="bg-white rounded-[2rem] shadow-sm border border-bakery-orange/5 overflow-hidden">
+      <div className="bg-white rounded-[1.5rem] shadow-sm border border-bakery-orange/5 overflow-hidden">
         <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-bakery-orange/20">
-          <table className="w-full border-collapse min-w-[1000px]">
+          <table className="w-full border-collapse min-w-[800px] table-fixed">
             <thead>
               <tr className="bg-bakery-warm/50 border-b border-bakery-orange/10">
-                <th className="text-left p-4 md:p-6 font-serif italic text-bakery-brown text-lg">Item Name</th>
-                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
-                  <div className="flex flex-col items-center space-y-2">
-                    <span className="whitespace-nowrap">Opening Item</span>
+                <th className="text-left p-3 md:p-4 font-serif italic text-bakery-brown text-base w-auto md:w-[40%]">Item Name</th>
+                <th className="text-center p-2 md:p-3 font-bold text-bakery-brown/70 w-[100px] md:w-[120px] uppercase tracking-tighter text-[10px]">
+                  <div className="flex flex-col items-center space-y-1">
+                    <span className="whitespace-nowrap">Opening</span>
                     <SmartInputField 
                       products={products} 
                       columnName="Opening" 
@@ -380,9 +380,9 @@ export function OutletManager({
                     />
                   </div>
                 </th>
-                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
-                  <div className="flex flex-col items-center space-y-2">
-                    <span className="whitespace-nowrap">Received Item</span>
+                <th className="text-center p-2 md:p-3 font-bold text-bakery-brown/70 w-[100px] md:w-[120px] uppercase tracking-tighter text-[10px]">
+                  <div className="flex flex-col items-center space-y-1">
+                    <span className="whitespace-nowrap">Received</span>
                     <SmartInputField 
                       products={products} 
                       columnName="Received" 
@@ -391,16 +391,16 @@ export function OutletManager({
                     />
                   </div>
                 </th>
-                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
-                  <div className="flex flex-col items-center space-y-2">
-                    <div className="flex items-center space-x-2">
+                <th className="text-center p-2 md:p-3 font-bold text-bakery-brown/70 w-[100px] md:w-[120px] uppercase tracking-tighter text-[10px]">
+                  <div className="flex flex-col items-center space-y-1">
+                    <div className="flex items-center space-x-1">
                       <span>Sales</span>
                       <button 
                         onClick={() => setShowUploader(true)}
                         className="p-1 hover:bg-bakery-orange/10 rounded-lg text-bakery-orange transition-colors"
                         title="Upload Excel for Sales"
                       >
-                        <FileSpreadsheet className="w-4 h-4" />
+                        <FileSpreadsheet className="w-3 h-3" />
                       </button>
                     </div>
                     <SmartInputField 
@@ -411,8 +411,8 @@ export function OutletManager({
                     />
                   </div>
                 </th>
-                <th className="text-center p-4 md:p-6 font-bold text-bakery-brown/70 w-[140px] uppercase tracking-tighter text-xs">
-                  <div className="flex flex-col items-center space-y-2">
+                <th className="text-center p-2 md:p-3 font-bold text-bakery-brown/70 w-[100px] md:w-[120px] uppercase tracking-tighter text-[10px]">
+                  <div className="flex flex-col items-center space-y-1">
                     <span className="whitespace-nowrap">Returned</span>
                     <SmartInputField 
                       products={products} 
@@ -422,7 +422,7 @@ export function OutletManager({
                     />
                   </div>
                 </th>
-                <th className="bg-bakery-accent/20 text-center p-4 md:p-6 font-black text-bakery-brown uppercase tracking-tighter text-xs">Closing Item</th>
+                <th className="bg-bakery-accent/20 text-center p-2 md:p-3 font-black text-bakery-brown uppercase tracking-tighter text-[10px] w-[100px] md:w-[130px]">Closing</th>
               </tr>
             </thead>
             <tbody>
@@ -432,59 +432,59 @@ export function OutletManager({
   
                 return (
                   <tr key={product.id} className="border-b border-bakery-warm/30 hover:bg-bakery-cream/50 transition-colors">
-                    <td className="p-4 md:p-6">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 rounded-lg bg-bakery-warm flex items-center justify-center shrink-0">
-                          <PackagePlus className="w-4 h-4 text-bakery-orange" />
+                    <td className="p-3 md:p-4 md:w-[40%]">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-7 h-7 rounded-lg bg-bakery-warm flex items-center justify-center shrink-0">
+                          <PackagePlus className="w-3.5 h-3.5 text-bakery-orange" />
                         </div>
                         <div className="min-w-0">
-                          <p className="font-bold text-bakery-brown truncate">{product.name}</p>
-                          <p className="text-[10px] text-bakery-brown/40 uppercase font-black">{product.category}</p>
+                          <p className="font-bold text-bakery-brown text-sm truncate">{product.name}</p>
+                          <p className="text-[9px] text-bakery-brown/40 uppercase font-black">{product.category}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-2 text-center">
                       <input 
                         type="number" 
                         value={stock.openingStock}
                         onChange={(e) => updateField(product.id, 'openingStock', parseInt(e.target.value) || 0)}
-                        className="w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-bakery-warm/50 border-none focus:ring-2 focus:ring-bakery-accent font-medium text-bakery-brown"
+                        className="w-14 md:w-16 mx-auto text-center p-1.5 rounded-lg bg-bakery-warm/50 border-none focus:ring-1 focus:ring-bakery-accent font-medium text-bakery-brown text-sm"
                       />
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-2 text-center">
                       <input 
                         type="number" 
                         value={stock.received}
                         onChange={(e) => updateField(product.id, 'received', parseInt(e.target.value) || 0)}
-                        className="w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-bakery-warm border-none focus:ring-2 focus:ring-bakery-accent"
+                        className="w-14 md:w-16 mx-auto text-center p-1.5 rounded-lg bg-bakery-warm border-none focus:ring-1 focus:ring-bakery-accent text-sm"
                       />
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-2 text-center">
                       <input 
                         type="number" 
                         value={stock.sold}
                         onChange={(e) => updateField(product.id, 'sold', parseInt(e.target.value) || 0)}
                         className={cn(
-                          "w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-green-50 border-none focus:ring-2 focus:ring-green-400 font-bold",
+                          "w-14 md:w-16 mx-auto text-center p-1.5 rounded-lg bg-green-50 border-none focus:ring-1 focus:ring-green-400 font-bold text-sm",
                           stock.sold > 0 ? "text-green-700" : "text-gray-400"
                         )}
                       />
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-2 text-center">
                       <input 
                         type="number" 
                         value={stock.returned}
                         onChange={(e) => updateField(product.id, 'returned', parseInt(e.target.value) || 0)}
-                        className="w-16 md:w-20 mx-auto text-center p-2 rounded-lg bg-white border border-bakery-orange/20 focus:ring-2 focus:ring-bakery-orange"
+                        className="w-14 md:w-16 mx-auto text-center p-1.5 rounded-lg bg-white border border-bakery-orange/20 focus:ring-1 focus:ring-bakery-orange text-sm"
                       />
                     </td>
-                    <td className="p-4 text-center">
+                    <td className="p-2 text-center">
                       <input 
                         type="number" 
                         value={stock.closingStock}
                         onChange={(e) => updateField(product.id, 'closingStock', parseInt(e.target.value) || 0)}
                         className={cn(
-                          "w-20 md:w-24 mx-auto text-center p-2 md:p-3 rounded-2xl bg-bakery-accent/20 border-2 border-bakery-accent/30 focus:ring-4 focus:ring-bakery-accent font-black text-lg md:text-xl text-bakery-brown transition-all",
+                          "w-16 md:w-20 mx-auto text-center p-2 rounded-xl bg-bakery-accent/20 border border-bakery-accent/30 focus:ring-2 focus:ring-bakery-accent font-black text-base text-bakery-brown transition-all",
                           stock.closingStock !== (stock.openingStock + stock.received - stock.sold - stock.returned) && "border-red-400 bg-red-50"
                         )}
                       />
@@ -503,21 +503,21 @@ export function OutletManager({
         )}
       </div>
 
-      <div className="flex justify-center pt-8 pb-12">
+      <div className="flex justify-center pt-4 pb-8">
         {selectedDate === new Date().toISOString().split('T')[0] ? (
           <button
             onClick={startNextDay}
-            className="group flex flex-col items-center space-y-4"
+            className="group flex flex-col items-center space-y-2"
           >
-            <div className="bg-bakery-brown text-white px-24 py-6 rounded-[2.5rem] font-black text-3xl shadow-2xl shadow-bakery-brown/30 hover:scale-105 active:scale-95 transition-all flex items-center space-x-4">
-              <RefreshCcw className="w-8 h-8 group-hover:rotate-180 transition-transform duration-500" />
+            <div className="bg-bakery-brown text-white px-12 py-4 rounded-[1.5rem] font-black text-xl shadow-xl shadow-bakery-brown/20 hover:scale-105 active:scale-95 transition-all flex items-center space-x-3">
+              <RefreshCcw className="w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
               <span>SAVE & START NEXT DAY</span>
             </div>
-            <p className="text-bakery-brown/60 font-medium italic">Clicking this will move all Closing items to Tomorrow's Opening stock.</p>
+            <p className="text-[10px] text-bakery-brown/60 font-medium italic">Closes today and shifts stock to tomorrow.</p>
           </button>
         ) : (
-          <div className="bg-bakery-orange text-white px-24 py-6 rounded-[2.5rem] font-black text-3xl shadow-2xl shadow-bakery-orange/30 flex items-center space-x-4">
-            <CheckCircle2 className="w-8 h-8" />
+          <div className="bg-bakery-orange text-white px-12 py-4 rounded-[1.5rem] font-black text-xl shadow-xl shadow-bakery-orange/20 flex items-center space-x-3">
+            <CheckCircle2 className="w-6 h-6" />
             <span>HISTORY AUTO-SAVED</span>
           </div>
         )}

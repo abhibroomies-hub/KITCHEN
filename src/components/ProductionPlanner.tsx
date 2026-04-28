@@ -124,75 +124,74 @@ export function ProductionPlanner({ history, products, outlets, onBack }: Produc
         </div>
       </header>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <div className="bg-white p-8 rounded-[2.5rem] border border-bakery-orange/5 shadow-sm flex items-center justify-between">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white p-5 rounded-[1.5rem] border border-bakery-orange/5 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-black text-bakery-orange uppercase tracking-widest mb-1">Production Queue</p>
-            <h3 className="text-4xl font-serif text-bakery-brown italic">{stats.totalItems} Items</h3>
+            <p className="text-[10px] font-black text-bakery-orange uppercase tracking-widest mb-1">Production Queue</p>
+            <h3 className="text-2xl font-serif text-bakery-brown italic">{stats.totalItems} Items</h3>
           </div>
-          <ChefHat className="w-12 h-12 text-bakery-accent opacity-30" />
+          <ChefHat className="w-8 h-8 text-bakery-accent opacity-30" />
         </div>
         
-        <div className="bg-white p-8 rounded-[2.5rem] border border-bakery-orange/5 shadow-sm flex items-center justify-between">
+        <div className="bg-white p-5 rounded-[1.5rem] border border-bakery-orange/5 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-black text-red-500 uppercase tracking-widest mb-1">Critical Stock Outs</p>
-            <h3 className="text-4xl font-serif text-bakery-brown italic">{stats.criticalItems} Items</h3>
+            <p className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Critical Stock Outs</p>
+            <h3 className="text-2xl font-serif text-bakery-brown italic">{stats.criticalItems} Items</h3>
           </div>
-          <AlertCircle className="w-12 h-12 text-red-500 opacity-30" />
+          <AlertCircle className="w-8 h-8 text-red-500 opacity-30" />
         </div>
 
-        <div className="bg-bakery-accent/10 border-2 border-bakery-accent p-8 rounded-[2.5rem] shadow-sm flex items-center justify-between">
+        <div className="bg-bakery-accent/10 border border-bakery-accent p-5 rounded-[1.5rem] shadow-sm flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-2 mb-1">
-              <Lightbulb className="w-4 h-4 text-bakery-brown" />
-              <p className="text-xs font-black text-bakery-brown uppercase tracking-widest">Broomies AI Tip</p>
+              <Lightbulb className="w-3 h-3 text-bakery-brown" />
+              <p className="text-[8px] font-black text-bakery-brown uppercase tracking-widest">Broomies AI Tip</p>
             </div>
-            <p className="text-sm text-bakery-brown/70 italic font-medium leading-relaxed">
-              Based on last week, we expect {bufferPercent}% growth. Prepare extra 1Kg cakes for weekends.
+            <p className="text-[11px] text-bakery-brown/70 italic font-medium leading-tight">
+              Based on last week, we expect {bufferPercent}% growth. Prepare extra for weekends.
             </p>
           </div>
         </div>
       </div>
 
-      <div className="bg-white rounded-[2.5rem] overflow-hidden border border-bakery-orange/5 shadow-sm">
+      <div className="bg-white rounded-[1.5rem] overflow-hidden border border-bakery-orange/5 shadow-sm">
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-bakery-warm/50 border-b border-bakery-orange/10">
-              <th className="text-left p-6 font-serif italic text-bakery-brown text-lg">Product Details</th>
-              <th className="text-center p-6 font-black text-bakery-brown/40 uppercase tracking-tighter text-xs">Last Week Sales</th>
-              <th className="text-center p-6 font-black text-bakery-brown/40 uppercase tracking-tighter text-xs">Current Stock</th>
-              <th className="bg-bakery-accent/30 text-center p-6 font-black text-bakery-brown uppercase tracking-tighter text-xs">Suggested Production</th>
+              <th className="text-left p-4 font-serif italic text-bakery-brown text-base">Product Details</th>
+              <th className="text-center p-4 font-black text-bakery-brown/40 uppercase tracking-tighter text-[10px]">Weekly Sales</th>
+              <th className="text-center p-4 font-black text-bakery-brown/40 uppercase tracking-tighter text-[10px]">Stock</th>
+              <th className="bg-bakery-accent/30 text-center p-4 font-black text-bakery-brown uppercase tracking-tighter text-[10px]">Suggested</th>
             </tr>
           </thead>
           <tbody>
             {suggestions.map((s, idx) => (
               <tr key={s.productId} className="border-b border-bakery-warm/30 hover:bg-bakery-cream/50 transition-colors">
-                <td className="p-6">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-8 h-8 rounded-lg bg-bakery-warm flex items-center justify-center shrink-0">
-                      <Package className="w-4 h-4 text-bakery-orange" />
+                <td className="p-4">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-7 h-7 rounded-lg bg-bakery-warm flex items-center justify-center shrink-0">
+                      <Package className="w-3.5 h-3.5 text-bakery-orange" />
                     </div>
                     <div>
-                      <p className="font-bold text-bakery-brown">{s.productName}</p>
-                      <p className="text-[10px] text-bakery-brown/40 uppercase font-black">{s.category}</p>
+                      <p className="font-bold text-bakery-brown text-sm">{s.productName}</p>
+                      <p className="text-[9px] text-bakery-brown/40 uppercase font-black">{s.category}</p>
                     </div>
                   </div>
                 </td>
-                <td className="p-6 text-center">
-                  <span className="font-bold text-bakery-brown text-lg">{s.avgWeeklySales}</span>
+                <td className="p-4 text-center">
+                  <span className="font-bold text-bakery-brown">{s.avgWeeklySales}</span>
                 </td>
-                <td className="p-6 text-center">
+                <td className="p-2 text-center">
                   <span className={cn(
-                    "px-4 py-2 rounded-xl font-black",
+                    "px-3 py-1.5 rounded-xl font-black text-xs",
                     s.currentStock === 0 ? "bg-red-100 text-red-600" : "bg-bakery-warm text-bakery-brown/60"
                   )}>
                     {s.currentStock}
                   </span>
                 </td>
-                <td className="p-6 text-center bg-bakery-accent/5">
-                  <div className="flex items-center justify-center space-x-3">
-                    <span className="text-2xl font-black text-bakery-brown">{s.suggestedProduction}</span>
-                    <span className="text-[10px] font-black text-bakery-brown/40 uppercase">Recommended</span>
+                <td className="p-4 text-center bg-bakery-accent/5">
+                  <div className="flex items-center justify-center space-x-2">
+                    <span className="text-lg font-black text-bakery-brown">{s.suggestedProduction}</span>
                   </div>
                 </td>
               </tr>
