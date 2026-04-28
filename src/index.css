@@ -1,0 +1,21 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Cormorant+Garamond:wght@300;400;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-bakery-cream: #fdfaf5;
+  --color-bakery-warm: #f5f2ed;
+  --color-bakery-orange: #d97706;
+  --color-bakery-brown: #78350f;
+  --color-bakery-accent: #f59e0b;
+  
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Libre Baskerville", serif;
+  --font-display: "Cormorant+Garamond", serif;
+}
+
+@layer base {
+  body {
+    @apply bg-bakery-warm text-bakery-brown font-sans;
+  }
+}
+
