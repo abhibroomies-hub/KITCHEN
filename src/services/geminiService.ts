@@ -81,3 +81,88 @@ export async function parseStockInput(
     return { matches: {}, unmatched: [] };
   }
 }
+
+export interface MultiColumnParseResult {
+  matches: Record<string, {
+    opening?: number;
+    received?: number;
+    sold?: number;
+    returned?: number;
+  }>;
+  unmatched: Array<{ name: string; values: number[] }>;
+}
+
+export async function parseStockRowInput(
+  text: string,
+  products: Product[]
+): Promise<MultiColumnParseResult> {
+  const productList = products.map(p => `${p.id}: ${p.name} (${p.category})`).join('\n');
+  
+  const systemInstruction = `
+    You are an EXPERT inventory data extractor for "Broomies Bakery".
+    The user is pasting lines from a spreadsheet or a list which contains:
+    Product Name, Opening, Received, Sales, Returned.
+    
+    Products available in the Menu:
+    ${productList}
+    
+    KNOWLEDGE & INSTRUCTIONS:
+    - You must extract the product name and up to 4 numbers for each row.
+    - If a row has "Almond Biscooti 2 0 0 0", it means:
+      * Product: Almond Biscooti
+      * Opening: 2
+      * Received: 0
+      * Sales: 0
+      * Returned: 0
+    - If numbers are missing, assume 0.
+    - Match the product names to our Product IDs using semantic matching.
+    
+    Return a JSON object with:
+    1. "matches": { [productId]: { opening: N, received: N, sold: N, returned: N } }
+    2. "unmatched": Array of { "name": text, "values": [num1, num2...] } for rows you can't map.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: text,
+      config: {
+        systemInstruction,
+        responseMimeType: "application/json",
+        responseSchema: {
+          type: Type.OBJECT,
+          properties: {
+            matches: {
+              type: Type.OBJECT,
+              additionalProperties: {
+                type: Type.OBJECT,
+                properties: {
+                  opening: { type: Type.NUMBER },
+                  received: { type: Type.NUMBER },
+                  sold: { type: Type.NUMBER },
+                  returned: { type: Type.NUMBER }
+                }
+              }
+            },
+            unmatched: {
+              type: Type.ARRAY,
+              items: {
+                type: Type.OBJECT,
+                properties: {
+                  name: { type: Type.STRING },
+                  values: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                }
+              }
+            }
+          },
+          required: ["matches", "unmatched"]
+        }
+      },
+    });
+
+    return JSON.parse(response.text || '{"matches":{}, "unmatched":[]}');
+  } catch (error) {
+    console.error("Gemini Multi-Column Parsing Error:", error);
+    return { matches: {}, unmatched: [] };
+  }
+}

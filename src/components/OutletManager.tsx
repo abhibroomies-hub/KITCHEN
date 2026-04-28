@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { ExcelUploader } from './ExcelUploader';
 import { SmartInputField } from './SmartInputField';
+import { MultiColumnAIImport } from './MultiColumnAIImport';
 import { ConflictResolver } from './ConflictResolver';
 import { cn } from '../lib/utils';
 import Fuse from 'fuse.js';
@@ -44,8 +45,10 @@ export function OutletManager({
 }: OutletManagerProps) {
   const [showUploader, setShowUploader] = useState(false);
   const [showBulkAI, setShowBulkAI] = useState(false);
-  const [selectedAIColumn, setSelectedAIColumn] = useState<keyof StockEntry>('received');
+  const [selectedAIColumn, setSelectedAIColumn] = useState<keyof StockEntry | 'all'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSaveSuccess, setShowSaveSuccess] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [conflictItems, setConflictItems] = useState<{ name: string; qty: number }[]>([]);
   const [pendingField, setPendingField] = useState<keyof StockEntry>('sold');
@@ -88,9 +91,42 @@ export function OutletManager({
     onUpdateStock(updatedStock, selectedDate);
 
     if (unmatched.length > 0) {
-      setPendingField(field);
+      setPendingField(field as keyof StockEntry);
       setConflictItems(unmatched);
     }
+  };
+
+  const handleMultiSmartEntry = (results: Record<string, any>) => {
+    const updatedStock = { ...activeStock };
+    Object.entries(results).forEach(([pId, values]) => {
+      if (updatedStock[pId]) {
+        updatedStock[pId] = {
+          ...updatedStock[pId],
+          openingStock: values.opening !== undefined ? values.opening : updatedStock[pId].openingStock,
+          received: values.received !== undefined ? values.received : updatedStock[pId].received,
+          sold: values.sold !== undefined ? values.sold : updatedStock[pId].sold,
+          returned: values.returned !== undefined ? values.returned : updatedStock[pId].returned,
+          lastUpdated: new Date().toISOString()
+        };
+        const s = updatedStock[pId];
+        s.closingStock = s.openingStock + s.received - s.sold - s.returned;
+      }
+    });
+
+    onUpdateStock(updatedStock, selectedDate);
+    setShowBulkAI(false);
+  };
+
+  const handleSave = () => {
+    setIsSaving(true);
+    // Explicitly call onUpdateStock to ensure everything is synced
+    onUpdateStock(activeStock, selectedDate);
+    
+    setTimeout(() => {
+      setIsSaving(false);
+      setShowSaveSuccess(true);
+      setTimeout(() => setShowSaveSuccess(false), 3000);
+    }, 800);
   };
 
   const handleConflictResolve = (resolutions: Record<string, number>) => {
@@ -237,6 +273,25 @@ export function OutletManager({
 
         <div className="flex flex-wrap gap-3">
           <button 
+            onClick={handleSave}
+            disabled={isSaving}
+            className={cn(
+              "flex items-center space-x-2 px-6 py-3 rounded-2xl font-black transition-all shadow-xl",
+              showSaveSuccess 
+                ? "bg-green-600 text-white shadow-green-600/20" 
+                : "bg-bakery-orange text-white shadow-bakery-orange/20 hover:scale-105"
+            )}
+          >
+            {isSaving ? (
+              <RefreshCcw className="w-5 h-5 animate-spin" />
+            ) : showSaveSuccess ? (
+              <Check className="w-5 h-5" />
+            ) : (
+              <CheckCircle2 className="w-5 h-5" />
+            )}
+            <span>{showSaveSuccess ? 'Changes Saved!' : 'Save Progress'}</span>
+          </button>
+          <button 
             onClick={() => setShowBulkAI(true)}
             className="flex items-center space-x-2 bg-bakery-accent text-bakery-brown px-6 py-3 rounded-2xl font-black hover:scale-105 transition-all shadow-xl shadow-bakery-accent/20"
           >
@@ -270,43 +325,74 @@ export function OutletManager({
                 </button>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-2 mb-6">
+                <button
+                  onClick={() => setSelectedAIColumn('all')}
+                  className={cn(
+                    "py-3 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 transition-all",
+                    selectedAIColumn === 'all' 
+                      ? "bg-bakery-accent text-bakery-brown border-bakery-accent shadow-lg scale-105" 
+                      : "bg-white text-bakery-brown/40 border-bakery-warm hover:border-bakery-orange/20"
+                  )}
+                >
+                  Full Row Magic
+                </button>
                 {(['openingStock', 'received', 'sold', 'returned'] as const).map((col) => (
                   <button
                     key={col}
                     onClick={() => setSelectedAIColumn(col)}
                     className={cn(
-                      "py-3 rounded-xl text-xs font-bold uppercase tracking-wider border-2 transition-all",
+                      "py-3 rounded-xl text-[10px] font-black uppercase tracking-wider border-2 transition-all",
                       selectedAIColumn === col 
                         ? "bg-bakery-brown text-white border-bakery-brown shadow-lg scale-105" 
                         : "bg-white text-bakery-brown/40 border-bakery-warm hover:border-bakery-orange/20"
                     )}
                   >
-                    Set {col === 'sold' ? 'Sales' : col.replace('Stock', '')}
+                    {col === 'openingStock' ? 'Opening Only' : col === 'sold' ? 'Sales Only' : col.charAt(0).toUpperCase() + col.slice(1) + ' Only'}
                   </button>
                 ))}
               </div>
 
               <div className="relative">
-                <SmartInputField 
-                  products={products}
-                  columnName={selectedAIColumn.replace('Stock', '').toUpperCase()}
-                  onDataParsed={(data, unmatched) => {
-                    handleSmartEntry(selectedAIColumn, data, unmatched);
-                    setShowBulkAI(false);
-                  }}
-                  onNavigateToMenu={onNavigateToMenu}
-                  isBulk
-                />
+                {selectedAIColumn === 'all' ? (
+                  <div className="space-y-4">
+                    <MultiColumnAIImport 
+                      products={products} 
+                      onDataParsed={handleMultiSmartEntry} 
+                    />
+                  </div>
+                ) : (
+                  <SmartInputField 
+                    products={products}
+                    columnName={selectedAIColumn.replace('Stock', '').toUpperCase()}
+                    onDataParsed={(data, unmatched) => {
+                      handleSmartEntry(selectedAIColumn as keyof StockEntry, data, unmatched);
+                      setShowBulkAI(false);
+                    }}
+                    onNavigateToMenu={onNavigateToMenu}
+                    isBulk
+                  />
+                )}
               </div>
 
               <div className="mt-8 bg-bakery-warm/30 p-6 rounded-2xl border border-bakery-orange/10">
-                <h4 className="text-sm font-bold text-bakery-brown mb-2 uppercase tracking-widest">Example format you can paste:</h4>
+                <h4 className="text-sm font-bold text-bakery-brown mb-2 uppercase tracking-widest">
+                  {selectedAIColumn === 'all' ? 'Universal Row Format:' : 'Single Column Format:'}
+                </h4>
                 <div className="text-xs text-bakery-brown/60 font-mono space-y-1">
-                  <p>Item Name, Quantity</p>
-                  <p>Classic Pineapple Pastry, 5</p>
-                  <p>Black Forest Pastry, 2</p>
-                  <p>... or just write: "dus chocochip cake aur 5 brown bread"</p>
+                  {selectedAIColumn === 'all' ? (
+                    <>
+                      <p>Item Name | Opening | Received | Sales | Returned</p>
+                      <p>Example: Almond Biscooti 10 5 2 0</p>
+                      <p>Example: 2 Pineaple pastry, 5 Received, 1 sold</p>
+                    </>
+                  ) : (
+                    <>
+                      <p>Item Name, Quantity</p>
+                      <p>Classic Pineapple Pastry, 5</p>
+                      <p>... or just: "dus chocochip cake"</p>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
